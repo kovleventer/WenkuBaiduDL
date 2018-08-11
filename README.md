@@ -2,22 +2,22 @@
 
 Download documents from wenku.baidu.com without registration
 
-# Requirements
+## Requirements
 
 * img2pdf: https://github.com/josch/img2pdf
 * swfrender from swftools: http://www.swftools.org/
 
-# Usage
+## Usage
 
 Paste the desired url into the method call in the main block as its first parameter, then run the script
 
-# Credits
+## Credits
 
 * https://github.com/bazzinotti/dl-baidu-pdf
 * https://github.com/Hacksign/BaiduDoc/
 * https://github.com/zyp001a/swf2pdf
 
-# Notes
+## Notes
 
 While similar software did exist (https://github.com/bazzinotti/dl-baidu-pdf), I found it cumbersome to set it up, especially when I had to fix numerous issues just to make it work. On one had, modularity is a good thing, but on the other hand, these modules were not working well together, updates broke compatibility, so I rewrote the easy stuff (everything except the conversion libraries) in Python.
 
