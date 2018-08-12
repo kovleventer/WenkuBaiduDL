@@ -1,6 +1,7 @@
 import requests
 import json
 import os, shutil
+import argparse
 
 import img2pdf
 from PIL import Image
@@ -26,16 +27,16 @@ def convert_to_rgb(path):
 # With each network query, multiple pages can be accessed to speed things up
 # A small chunk of header data also serves as progress indication
 # So to download a pdf, this program downloads a few swf-s at once with each query
-def download_one_block(id, page_number):
+def download_one_block(id, page_number, resolution, pages_per_query):
     # Reference: https://github.com/Hacksign/BaiduDoc/
 
     # According to the swf specification, the W and S bytes are constant and always the same
-    # The reference indicates that all swf files have a version number 6 and are zlib compressed
+    # The reference indicates that all swf files have a version number 9 and are zlib compressed
     SWF_HEADER = "CWS" + chr(9)
 
     # Raw swf binary data is stored in a text format
     # After a short json-like header, .swf files are concatenated, page after page
-    url = "http://ai.wenku.baidu.com/play/" + id + "?pn=" + str(page_number) + "&rn=5"  # TODO make use of this 'rn' param
+    url = "http://ai.wenku.baidu.com/play/" + id + "?pn=" + str(page_number) + "&rn=" + str(pages_per_query)
     print(url)
     raw_text = requests.get(url).text  # TODO threading to speed up network queries
 
@@ -49,7 +50,7 @@ def download_one_block(id, page_number):
 
     # Splitting is used here to separate swf files
     # While the reference library had used a similar method
-    #   it would be a better practice to exctract FileLength from the swf headers (TODO)
+    #   it would be a better practice to extract FileLength from the swf headers (TODO)
     splitted = raw_text.split(SWF_HEADER)[1:]  # The first part is discarded as its not a part of any page
 
     for i in range(len(splitted)):
@@ -64,7 +65,7 @@ def download_one_block(id, page_number):
             f.write(data)
         # Converts the first page of each swf into a png image
         # swfrender takes a path as its main parameter
-        os.system("swfrender -r 240 -p 1 " + swf_filename + " -o " + png_filename)  # TODO alternate resolutions (-r 240)
+        os.system("swfrender -r " + str(resolution) + " -p 1 " + swf_filename + " -o " + png_filename)
         os.remove(swf_filename)
         # For some reason swfrender outputs pngs with alpha channel sometimes,
         #   and img2pdf refuses to work with images with transparency
@@ -77,7 +78,7 @@ def download_one_block(id, page_number):
     return toPage, totalPage == toPage
 
 
-def download_pdf(url, output_name):
+def download_pdf(url, output_name, resolution, pages_per_query):
     try:
         os.mkdir(TMPDIR)
     except OSError:
@@ -88,7 +89,7 @@ def download_pdf(url, output_name):
     id = url[url.rfind("/")+1:url.rfind(".")]
     fromPage = 1
     while True:
-        fromPage, end = download_one_block(id, fromPage)
+        fromPage, end = download_one_block(id, fromPage, resolution, pages_per_query)
         fromPage += 1
         if end:
             break
@@ -100,6 +101,12 @@ def download_pdf(url, output_name):
     shutil.rmtree(TMPDIR)
     pass
 
+
 if __name__ == "__main__":
-    # TODO add command line arguments
-    download_pdf("https://wenku.baidu.com/view/db740a9edc3383c4bb4cf7ec4afe04a1b071b016.html?rec_flag=default&sxts=1533997032540", "OUTPUT.pdf")
+    parser = argparse.ArgumentParser(description="Download documents from wenku.baidu.com")
+    parser.add_argument("url", help="The url to download from")
+    parser.add_argument("-o", "--output", help="The name of the desired .pdf file", default="OUTPUT.pdf")
+    parser.add_argument("-r", "--resolution", type=int, help="The resolution of the generated image files in dpi", default=240)
+    parser.add_argument("-p", "--pages_per_query", type=int, help="How many pages should be requested with each network query", default=5)
+    args = parser.parse_args()
+    download_pdf(args.url, args.output, args.resolution, args.pages_per_query)
