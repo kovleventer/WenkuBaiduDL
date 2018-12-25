@@ -89,7 +89,15 @@ def download_pdf(url, output_name, resolution, pages_per_query):
     id = url[url.rfind("/")+1:url.rfind(".")]
     fromPage = 1
     while True:
+        lastFromPage = fromPage - 1  # To preserve the number of retrieved pages for error displaying
         fromPage, end = download_one_block(id, fromPage, resolution, pages_per_query)
+
+        # If no data was returned, all of the three (totalPage, fromPage, toPage) values will be zero
+        # Which is impossible in normal circumstances and indicates an error
+        if fromPage == 0:
+            print("ERROR while downloading, the document might be behind a paywall. "
+                  "Only the first " + str(lastFromPage) + " pages were downloaded")
+
         fromPage += 1
         if end:
             break
@@ -99,7 +107,6 @@ def download_pdf(url, output_name, resolution, pages_per_query):
         f.write(img2pdf.convert(filenames))
 
     shutil.rmtree(TMPDIR)
-    pass
 
 
 if __name__ == "__main__":
