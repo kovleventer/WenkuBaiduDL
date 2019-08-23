@@ -27,7 +27,7 @@ def convert_to_rgb(path):
 # With each network query, multiple pages can be accessed to speed things up
 # A small chunk of header data also serves as progress indication
 # So to download a pdf, this program downloads a few swf-s at once with each query
-def download_one_block(id, page_number, resolution, pages_per_query):
+def download_one_block(doc_id, page_number, resolution, pages_per_query):
     # Reference: https://github.com/Hacksign/BaiduDoc/
 
     # According to the swf specification, the W and S bytes are constant and always the same
@@ -36,7 +36,7 @@ def download_one_block(id, page_number, resolution, pages_per_query):
 
     # Raw swf binary data is stored in a text format
     # After a short json-like header, .swf files are concatenated, page after page
-    url = "http://ai.wenku.baidu.com/play/" + id + "?pn=" + str(page_number) + "&rn=" + str(pages_per_query)
+    url = "http://ai.wenku.baidu.com/play/" + doc_id + "?pn=" + str(page_number) + "&rn=" + str(pages_per_query)
     print(url)
     raw_text = requests.get(url).text  # TODO threading to speed up network queries
 
@@ -86,11 +86,11 @@ def download_pdf(url, output_name, resolution, pages_per_query):
 
     # Documents are identified by and id
     # The reference calls it md5, which suggests that this id might be the generated md5 hash value of the pdfs
-    id = url[url.rfind("/")+1:url.rfind(".")]
+    doc_id = url[url.rfind("/")+1:url.rfind(".")]
     fromPage = 1
     while True:
         lastFromPage = fromPage - 1  # To preserve the number of retrieved pages for error displaying
-        fromPage, end = download_one_block(id, fromPage, resolution, pages_per_query)
+        fromPage, end = download_one_block(doc_id, fromPage, resolution, pages_per_query)
 
         # If no data was returned, all of the three (totalPage, fromPage, toPage) values will be zero
         # Which is impossible in normal circumstances and indicates an error
